@@ -9,7 +9,7 @@ st.set_page_config(page_title="Homework Scheduler", layout="centered")
 st.title("Weekly Homework Scheduler")
 
 # Step 1: Sort assignments by preference
-st.markdown("### Let's arrange tasks from your favorite to least favorite")
+st.markdown("### Let's arrange tasks (by clicking & dragging) from your favorite to least favorite")
 
 tasks = [
     "Spanish Vocabulary",
