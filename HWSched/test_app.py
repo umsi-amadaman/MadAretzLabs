@@ -5,21 +5,18 @@ import matplotlib.pyplot as plt
 import random
 
 st.set_page_config(page_title="Homework Scheduler", layout="centered")
+st.title("Tonight's Study Scheduler")
 
-st.title("Weekly Homework Scheduler")
-
-# Step 1: Sort assignments by preference
-st.markdown("### Let's arrange tasks (by clicking & dragging) from your favorite to least favorite")
-
+# Task list
 tasks = [
     "Spanish Vocabulary",
     "English Report Draft",
-    "History Chapter Notes",
+    "History Chapter 2 Notes",
     "Algebra Problem Set",
-    "Music Practice"
+    "Clarinet Practice"
 ]
 
-# 5 emoji blocks — no red, white, or black
+# Color emoji blocks and matching hex codes
 color_blocks = ['🟦', '🟩', '🟨', '🟪', '🟫']
 symbol_colors = {
     '🟦': '#4da6ff',
@@ -29,19 +26,32 @@ symbol_colors = {
     '🟫': '#a0522d'
 }
 
-# Shuffle and assign emojis to tasks
-random.shuffle(color_blocks)
-task_symbols = {task: color_blocks[i] for i, task in enumerate(tasks)}
-task_colors = {task: symbol_colors[task_symbols[task]] for task in tasks}
+# Shuffle emoji and assign to tasks
+if "task_symbols" not in st.session_state:
+    random.shuffle(color_blocks)
+    st.session_state.task_symbols = {task: color_blocks[i] for i, task in enumerate(tasks)}
+    st.session_state.task_colors = {
+        task: symbol_colors[st.session_state.task_symbols[task]] for task in tasks
+    }
 
-# Emoji-prefixed labels
-emoji_labels = [f"{task_symbols[task]} {task}" for task in tasks]
+# Initialize task order with emoji labels
+if "sorted_labels" not in st.session_state:
+    emoji_labels = [
+        f"{st.session_state.task_symbols[task]} {task}" for task in tasks
+    ]
+    st.session_state.sorted_labels = emoji_labels
 
-# Sort tasks using emoji labels
-sorted_labels = sort_items(emoji_labels, direction="vertical")
-sorted_tasks = [label.split(' ', 1)[1] for label in sorted_labels]
+# Show sortable list and update order if changed
+st.markdown("### Click and drag the red buttons to arrange tasks from your favorite to least favorite")
+new_order = sort_items(st.session_state.sorted_labels, direction="vertical")
 
-# Step 2: Time estimates
+if new_order != st.session_state.sorted_labels:
+    st.session_state.sorted_labels = new_order
+
+# Recover task names from emoji labels
+sorted_tasks = [label.split(' ', 1)[1] for label in st.session_state.sorted_labels]
+
+# Step 2: Time input per task
 st.markdown(
     "### Ok that was great! Now let’s figure out how much time each task needs. "
     "In the future I can estimate based on how long you needed and what grade you got."
@@ -58,7 +68,7 @@ for task in reverse_tasks:
     )
     time_inputs.append(minutes)
 
-# Step 3: Timeline
+# Step 3: Timeline chart
 if all(m > 0 for m in time_inputs):
     df = pd.DataFrame({"task": reverse_tasks, "minutes": time_inputs})
 
@@ -80,7 +90,7 @@ if all(m > 0 for m in time_inputs):
     colors = [
         "gray" if t[2] == "short_break" else
         "white" if t[2] == "long_break" else
-        task_colors.get(t[0], "#000000")
+        st.session_state.task_colors.get(t[0], "#000000")
         for t in timeline
     ]
 
