@@ -14,7 +14,7 @@ st.markdown("### Let's arrange tasks from your favorite to least favorite")
 tasks = [
     "Spanish Vocabulary",
     "English Report Draft",
-    "History Chapter 4 Notes",
+    "History Chapter 6 Notes",
     "Algebra Problem Set",
     "Biology Lab Write-Up",
     "Clarinet Practice"
