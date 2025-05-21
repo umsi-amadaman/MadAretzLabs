@@ -26,7 +26,7 @@ symbol_colors = {
     '🟫': '#a0522d'
 }
 
-# Initialize symbols and colors once
+# Initialize emoji assignments and colors
 if "task_symbols" not in st.session_state:
     random.shuffle(color_blocks)
     st.session_state.task_symbols = {task: color_blocks[i] for i, task in enumerate(tasks)}
@@ -34,24 +34,22 @@ if "task_symbols" not in st.session_state:
         task: symbol_colors[st.session_state.task_symbols[task]] for task in tasks
     }
 
-# Initialize emoji-labeled task order
+# Initialize sortable labels
 if "sorted_labels" not in st.session_state:
-    emoji_labels = [
-        f"{st.session_state.task_symbols[task]} {task}" for task in tasks
-    ]
+    emoji_labels = [f"{st.session_state.task_symbols[task]} {task}" for task in tasks]
     st.session_state.sorted_labels = emoji_labels
 
-# Show sortable widget
+# Render draggable list
 st.markdown("### Let's arrange tasks from your favorite to least favorite")
 new_order = sort_items(st.session_state.sorted_labels, direction="vertical")
 
 if new_order != st.session_state.sorted_labels:
     st.session_state.sorted_labels = new_order
 
-# Strip emoji to get clean task names
+# Strip emojis to recover clean task names
 sorted_tasks = [label.split(' ', 1)[1] for label in st.session_state.sorted_labels]
 
-# Time input section
+# Time input per task
 st.markdown(
     "### Ok that was great! Now let’s figure out how much time each task needs. "
     "In the future I can estimate based on how long you needed and what grade you got."
@@ -68,7 +66,7 @@ for task in reverse_tasks:
     )
     time_inputs.append(minutes)
 
-# Generate timeline only when all inputs are filled
+# Plot only when all inputs are non-zero
 if all(m > 0 for m in time_inputs):
     df = pd.DataFrame({"task": reverse_tasks, "minutes": time_inputs})
 
@@ -78,14 +76,16 @@ if all(m > 0 for m in time_inputs):
         timeline.append((row["task"], row["minutes"], "task"))
         current_time += row["minutes"]
 
+        # Add 5 min break
         timeline.append(("Break", 5, "short_break"))
         current_time += 5
 
+        # Add 10 min break at each full hour crossed
         if current_time // 60 > (current_time - 5) // 60:
             timeline.append(("Hour Break", 10, "long_break"))
             current_time += 10
 
-    # Draw stacked bar timeline
+    # Draw vertical stacked bar
     fig, ax = plt.subplots(figsize=(2, 6))
     start = 0
     for label, duration, typ in timeline:
