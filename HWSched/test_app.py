@@ -3,6 +3,7 @@ from streamlit_sortables import sort_items
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
+from bs4 import BeautifulSoup
 
 st.set_page_config(page_title="Homework Scheduler", layout="centered")
 
@@ -14,16 +15,26 @@ st.markdown("### Let's arrange tasks from your favorite to least favorite")
 tasks = [
     "Spanish Vocabulary",
     "English Report Draft",
-    "History Chapter 6 Notes",
+    "History Chapter 7 Notes",
     "Algebra Problem Set",
     "Biology Lab Write-Up",
-    "Clarinet Practice"
+    "Tuba Practice"
 ]
 
-sorted_tasks = sort_items(tasks, direction="vertical")
+# Assign random colors to each task
+task_colors = {task: f"#{random.randint(0, 0xFFFFFF):06x}" for task in tasks}
 
-# Assign a random color to each task
-task_colors = {task: f"#{random.randint(0, 0xFFFFFF):06x}" for task in sorted_tasks}
+# Generate colored task HTML
+def colorize(task, color):
+    return f"<div style='padding:6px 12px; background-color:{color}; border-radius:6px; color:white; font-weight:500'>{task}</div>"
+
+colored_tasks = [colorize(task, task_colors[task]) for task in tasks]
+
+# Sort using the HTML-wrapped task labels
+sorted_html = sort_items(colored_tasks, direction="vertical", unsafe_allow_html=True)
+
+# Strip HTML to recover clean task names
+sorted_tasks = [BeautifulSoup(item, "html.parser").text for item in sorted_html]
 
 # Step 2: Prompt for time per task (reverse order)
 st.markdown(
