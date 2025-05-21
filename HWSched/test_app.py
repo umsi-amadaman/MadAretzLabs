@@ -69,38 +69,25 @@ for task in reverse_tasks:
     time_inputs.append(minutes)
 
 # Step 3: Timeline chart
-if all(m > 0 for m in time_inputs):
-    df = pd.DataFrame({"task": reverse_tasks, "minutes": time_inputs})
+# Build stacked vertical timeline
+fig, ax = plt.subplots(figsize=(2, 6))
+start_time = 0
 
-    timeline = []
-    current_time = 0
-    for _, row in df.iterrows():
-        timeline.append((row["task"], row["minutes"], "task"))
-        current_time += row["minutes"]
+for label, duration, typ in timeline:
+    color = (
+        "gray" if typ == "short_break" else
+        "white" if typ == "long_break" else
+        st.session_state.task_colors.get(label, "#000000")
+    )
+    ax.barh(0, duration, left=start_time, color=color, edgecolor='black')
+    ax.text(start_time + duration / 2, 0, label, ha='center', va='center', fontsize=8, rotation=90)
+    start_time += duration
 
-        timeline.append(("Break", 5, "short_break"))
-        current_time += 5
+ax.set_xlim(0, start_time)
+ax.set_yticks([])
+ax.set_xlabel("Minutes")
+ax.set_title("Planned Timeline (Stacked)")
 
-        if current_time // 60 > (current_time - 5) // 60:
-            timeline.append(("Hour Break", 10, "long_break"))
-            current_time += 10
+st.pyplot(fig)
 
-    labels = [item[0] for item in timeline]
-    durations = [item[1] for item in timeline]
-    colors = [
-        "gray" if t[2] == "short_break" else
-        "white" if t[2] == "long_break" else
-        st.session_state.task_colors.get(t[0], "#000000")
-        for t in timeline
-    ]
-
-    fig, ax = plt.subplots(figsize=(4, len(timeline) * 0.6))
-    ax.bar(range(len(durations)), durations, color=colors, edgecolor='black')
-    ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=90)
-    ax.set_ylabel("Minutes")
-    ax.set_title("Planned Timeline (Vertical)")
-
-    st.pyplot(fig)
-
-    st.markdown("### If this looks good, we can start the timer.")
+st.markdown("### If this looks good, we can start the timer.")
