@@ -40,7 +40,7 @@ if "sorted_labels" not in st.session_state:
     st.session_state.sorted_labels = emoji_labels
 
 # Render draggable list
-st.markdown("### Let's arrange tasks from your favorite to least favorite")
+st.markdown("### Drag and click to arrange tasks from your favorite to least favorite")
 new_order = sort_items(st.session_state.sorted_labels, direction="vertical")
 
 if new_order != st.session_state.sorted_labels:
