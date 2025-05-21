@@ -3,40 +3,45 @@ from streamlit_sortables import sort_items
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
-from bs4 import BeautifulSoup
 
 st.set_page_config(page_title="Homework Scheduler", layout="centered")
 
 st.title("Weekly Homework Scheduler")
 
 # Step 1: Sort assignments by preference
-st.markdown("### Let's arrange tasks from your favorite to least favorite by clicking and dragging")
+st.markdown("### Let's arrange tasks from your favorite to least favorite")
 
 tasks = [
     "Spanish Vocabulary",
     "English Report Draft",
-    "History Chapter 3 Notes",
+    "History Chapter Notes",
     "Algebra Problem Set",
-    "Biology Lab Write-Up",
-    "Tuba Practice"
+    "Music Practice"
 ]
 
-# Assign random colors to each task
-task_colors = {task: f"#{random.randint(0, 0xFFFFFF):06x}" for task in tasks}
+# 5 emoji blocks — no red, white, or black
+color_blocks = ['🟦', '🟩', '🟨', '🟪', '🟫']
+symbol_colors = {
+    '🟦': '#4da6ff',
+    '🟩': '#4dff88',
+    '🟨': '#ffff66',
+    '🟪': '#bf80ff',
+    '🟫': '#a0522d'
+}
 
-# Generate colored task HTML
-def colorize(task, color):
-    return f"<div style='padding:6px 12px; background-color:{color}; border-radius:6px; color:white; font-weight:500'>{task}</div>"
+# Shuffle and assign emojis to tasks
+random.shuffle(color_blocks)
+task_symbols = {task: color_blocks[i] for i, task in enumerate(tasks)}
+task_colors = {task: symbol_colors[task_symbols[task]] for task in tasks}
 
-colored_tasks = [colorize(task, task_colors[task]) for task in tasks]
+# Emoji-prefixed labels
+emoji_labels = [f"{task_symbols[task]} {task}" for task in tasks]
 
-# Sort using the HTML-wrapped task labels
-sorted_html = sort_items(colored_tasks, direction="vertical", unsafe_allow_html=True)
+# Sort tasks using emoji labels
+sorted_labels = sort_items(emoji_labels, direction="vertical")
+sorted_tasks = [label.split(' ', 1)[1] for label in sorted_labels]
 
-# Strip HTML to recover clean task names
-sorted_tasks = [BeautifulSoup(item, "html.parser").text for item in sorted_html]
-
-# Step 2: Prompt for time per task (reverse order)
+# Step 2: Time estimates
 st.markdown(
     "### Ok that was great! Now let’s figure out how much time each task needs. "
     "In the future I can estimate based on how long you needed and what grade you got."
@@ -53,7 +58,7 @@ for task in reverse_tasks:
     )
     time_inputs.append(minutes)
 
-# Step 3: Visualize vertical timeline with breaks
+# Step 3: Timeline
 if all(m > 0 for m in time_inputs):
     df = pd.DataFrame({"task": reverse_tasks, "minutes": time_inputs})
 
@@ -63,11 +68,9 @@ if all(m > 0 for m in time_inputs):
         timeline.append((row["task"], row["minutes"], "task"))
         current_time += row["minutes"]
 
-        # Add 5 min break after each task
         timeline.append(("Break", 5, "short_break"))
         current_time += 5
 
-        # Add 10 min break at the hour mark
         if current_time // 60 > (current_time - 5) // 60:
             timeline.append(("Hour Break", 10, "long_break"))
             current_time += 10
@@ -82,8 +85,7 @@ if all(m > 0 for m in time_inputs):
     ]
 
     fig, ax = plt.subplots(figsize=(4, len(timeline) * 0.6))
-    bars = ax.bar(range(len(durations)), durations, color=colors, edgecolor='black')
-
+    ax.bar(range(len(durations)), durations, color=colors, edgecolor='black')
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels, rotation=90)
     ax.set_ylabel("Minutes")
