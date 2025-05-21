@@ -5,15 +5,15 @@ import matplotlib.pyplot as plt
 import random
 
 st.set_page_config(page_title="Homework Scheduler", layout="centered")
-st.title("Tonight's Study Scheduler")
+st.title("Weekly Homework Scheduler")
 
 # Task list
 tasks = [
     "Spanish Vocabulary",
     "English Report Draft",
-    "History Chapter 2 Notes",
+    "History Chapter Notes",
     "Algebra Problem Set",
-    "Clarinet Practice"
+    "Music Practice"
 ]
 
 # Color emoji blocks and matching hex codes
@@ -26,7 +26,7 @@ symbol_colors = {
     '🟫': '#a0522d'
 }
 
-# Shuffle emoji and assign to tasks
+# Initialize symbols and colors once
 if "task_symbols" not in st.session_state:
     random.shuffle(color_blocks)
     st.session_state.task_symbols = {task: color_blocks[i] for i, task in enumerate(tasks)}
@@ -34,24 +34,24 @@ if "task_symbols" not in st.session_state:
         task: symbol_colors[st.session_state.task_symbols[task]] for task in tasks
     }
 
-# Initialize task order with emoji labels
+# Initialize emoji-labeled task order
 if "sorted_labels" not in st.session_state:
     emoji_labels = [
         f"{st.session_state.task_symbols[task]} {task}" for task in tasks
     ]
     st.session_state.sorted_labels = emoji_labels
 
-# Show sortable list and update order if changed
-st.markdown("### Click and drag the red buttons to arrange tasks from your favorite to least favorite")
+# Show sortable widget
+st.markdown("### Let's arrange tasks from your favorite to least favorite")
 new_order = sort_items(st.session_state.sorted_labels, direction="vertical")
 
 if new_order != st.session_state.sorted_labels:
     st.session_state.sorted_labels = new_order
 
-# Recover task names from emoji labels
+# Strip emoji to get clean task names
 sorted_tasks = [label.split(' ', 1)[1] for label in st.session_state.sorted_labels]
 
-# Step 2: Time input per task
+# Time input section
 st.markdown(
     "### Ok that was great! Now let’s figure out how much time each task needs. "
     "In the future I can estimate based on how long you needed and what grade you got."
@@ -68,26 +68,41 @@ for task in reverse_tasks:
     )
     time_inputs.append(minutes)
 
-# Step 3: Timeline chart
-# Build stacked vertical timeline
-fig, ax = plt.subplots(figsize=(2, 6))
-start_time = 0
+# Generate timeline only when all inputs are filled
+if all(m > 0 for m in time_inputs):
+    df = pd.DataFrame({"task": reverse_tasks, "minutes": time_inputs})
 
-for label, duration, typ in timeline:
-    color = (
-        "gray" if typ == "short_break" else
-        "white" if typ == "long_break" else
-        st.session_state.task_colors.get(label, "#000000")
-    )
-    ax.barh(0, duration, left=start_time, color=color, edgecolor='black')
-    ax.text(start_time + duration / 2, 0, label, ha='center', va='center', fontsize=8, rotation=90)
-    start_time += duration
+    timeline = []
+    current_time = 0
+    for _, row in df.iterrows():
+        timeline.append((row["task"], row["minutes"], "task"))
+        current_time += row["minutes"]
 
-ax.set_xlim(0, start_time)
-ax.set_yticks([])
-ax.set_xlabel("Minutes")
-ax.set_title("Planned Timeline (Stacked)")
+        timeline.append(("Break", 5, "short_break"))
+        current_time += 5
 
-st.pyplot(fig)
+        if current_time // 60 > (current_time - 5) // 60:
+            timeline.append(("Hour Break", 10, "long_break"))
+            current_time += 10
 
-st.markdown("### If this looks good, we can start the timer.")
+    # Draw stacked bar timeline
+    fig, ax = plt.subplots(figsize=(2, 6))
+    start = 0
+    for label, duration, typ in timeline:
+        color = (
+            "gray" if typ == "short_break" else
+            "white" if typ == "long_break" else
+            st.session_state.task_colors.get(label, "#000000")
+        )
+        ax.barh(0, duration, left=start, color=color, edgecolor='black')
+        ax.text(start + duration / 2, 0, label, ha='center', va='center', fontsize=8, rotation=90)
+        start += duration
+
+    ax.set_xlim(0, start)
+    ax.set_yticks([])
+    ax.set_xlabel("Minutes")
+    ax.set_title("Planned Timeline (Stacked)")
+
+    st.pyplot(fig)
+
+    st.markdown("### If this looks good, we can start the timer.")
